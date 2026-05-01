@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_BACKEND_API ;
+const BASE_URL = import.meta.env.VITE_BACKEND_API;
 
 const Login = () => {
   const [form, setForm] = useState({

@@ -56,8 +56,26 @@ const ViewAdmins = () => {
   // Fetch organizations
   const fetchOrganizations = async () => {
     try {
-      const orgsData = await getOrganizations();
-      setOrganizations(Array.isArray(orgsData) ? orgsData : []);
+      const data = await getOrganizations();
+
+      // Ensure data is always an array - matching ViewOrganization logic
+      let organizationsArray = [];
+      if (Array.isArray(data)) {
+        organizationsArray = data;
+      } else if (data && typeof data === 'object') {
+        if (Array.isArray(data.data)) {
+          organizationsArray = data.data;
+        } else if (Array.isArray(data.organizations)) {
+          organizationsArray = data.organizations;
+        } else if (data.id || data.name) {
+          organizationsArray = [data];
+        } else {
+          console.error("Unexpected API response format:", data);
+          organizationsArray = [];
+        }
+      }
+
+      setOrganizations(organizationsArray);
     } catch (error) {
       console.error("Error fetching organizations:", error);
       setOrganizations([]);
@@ -70,14 +88,14 @@ const ViewAdmins = () => {
       setLoading(true);
       const response = await getUsers(selectedOrganization);
       console.log(response, "API Response");
-      
+
       // Handle different response structures
       let usersArray = [];
-      
+
       // Check if response has an 'admins' property (as shown in your data)
       if (response && response.admins && Array.isArray(response.admins)) {
         usersArray = response.admins;
-      } 
+      }
       // Check if response is directly an array
       else if (Array.isArray(response)) {
         usersArray = response;
@@ -94,7 +112,7 @@ const ViewAdmins = () => {
         console.warn("Unexpected response format:", response);
         usersArray = [];
       }
-      
+
       // Map the response data to match your component's expected structure
       // Based on your data: id, name, email, organizationId, status, roleName, roleId, etc.
       const mappedAdmins = usersArray.map(admin => ({
@@ -110,22 +128,22 @@ const ViewAdmins = () => {
         createdAt: admin.createdAt,
         updatedAt: admin.updatedAt
       }));
-      
+
       // Filter only admin roles (excluding superadmin if needed)
       let adminUsers = mappedAdmins.filter((u) =>
         ["admin", "superadmin", "manager", "tenant_admin"].includes(u.role?.toLowerCase())
       );
-      
+
       // Filter by selected organization if not "all"
       if (selectedOrganization !== "all") {
         adminUsers = adminUsers.filter(
           (u) => u.organizationId === selectedOrganization
         );
       }
-      
+
       console.log("Processed admins:", adminUsers);
       setAdmins(adminUsers);
-      
+
     } catch (error) {
       console.error("Error fetching admins:", error);
       setAdmins([]);
@@ -169,8 +187,8 @@ const ViewAdmins = () => {
       filterStatus === "all"
         ? true
         : filterStatus === "active"
-        ? admin.status === true
-        : admin.status === false;
+          ? admin.status === true
+          : admin.status === false;
 
     return matchesSearch && matchesStatus;
   });
@@ -585,11 +603,10 @@ const ViewAdmins = () => {
                       </td>
                       <td className="px-6 py-4">
                         <span
-                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${
-                            admin.status === true
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${admin.status === true
                               ? "bg-green-100 text-green-700"
                               : "bg-red-100 text-red-700"
-                          }`}
+                            }`}
                         >
                           {admin.status === true ? (
                             <>
@@ -603,7 +620,7 @@ const ViewAdmins = () => {
                             </>
                           )}
                         </span>
-                       </td>
+                      </td>
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-600">
                           <div className="flex items-center gap-1.5">
@@ -615,18 +632,17 @@ const ViewAdmins = () => {
                             {formatTime(admin.createdAt)}
                           </div>
                         </div>
-                       </td>
+                      </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {/* Status Toggle */}
                           <button
                             onClick={() => handleStatusToggle(admin)}
                             disabled={actionLoading === `status-${admin.id}`}
-                            className={`p-2 rounded-lg transition-colors ${
-                              admin.status === true
+                            className={`p-2 rounded-lg transition-colors ${admin.status === true
                                 ? "bg-green-100 text-green-600 hover:bg-green-200"
                                 : "bg-red-100 text-red-600 hover:bg-red-200"
-                            } disabled:opacity-50`}
+                              } disabled:opacity-50`}
                             title={admin.status === true ? "Deactivate" : "Activate"}
                           >
                             {actionLoading === `status-${admin.id}` ? (
@@ -658,7 +674,7 @@ const ViewAdmins = () => {
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
-                       </td>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
