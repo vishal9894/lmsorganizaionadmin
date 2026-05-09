@@ -3,11 +3,47 @@ import { toast } from "react-toastify";
 
 const API_URL = import.meta.env.VITE_BACKEND_API;
 
+// Configure axios instance with CORS settings
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+
+  withCredentials: false, // Set to false to avoid CORS preflight issues
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add request interceptor
+axiosInstance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Add response interceptor for error handling
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
+      console.error('Network/CORS Error:', error);
+      toast.error('Network error. Please check your connection or try a different network.');
+    }
+    return Promise.reject(error);
+  }
+);
+
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: token ? `Bearer ${token}` : undefined,
       "Content-Type": "application/json",
     },
   };
@@ -20,11 +56,11 @@ export const getUsers = async (id) => {
 
     if (id === "all" || !id) {
       // Get all admins across all organizations
-      response = await axios.get(`${API_URL}/admin`, getAuthHeaders());
+      response = await axiosInstance.get(`/admin`);
       console.log("API response for all admins:", response.data);
     } else {
       // Get admins for specific organization
-      response = await axios.get(`${API_URL}/admin/${id}`, getAuthHeaders());
+      response = await axiosInstance.get(`/admin/${id}`);
       console.log(`API response for org ${id}:`, response.data);
     }
 
@@ -33,7 +69,11 @@ export const getUsers = async (id) => {
     return result;
   } catch (error) {
     console.error("Error in getUsers:", error);
-    toast.error(error.response?.data?.message || "Failed to fetch users");
+    if (error.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check if the API is accessible from your network.');
+    } else {
+      toast.error(error.response?.data?.message || "Failed to fetch users");
+    }
     throw error;
   }
 };
@@ -41,10 +81,14 @@ export const getUsers = async (id) => {
 // Get single user by ID
 export const getUserById = async (id) => {
   try {
-    const response = await axios.get(`${API_URL}/api/users/${id}`, getAuthHeaders());
+    const response = await axiosInstance.get(`/api/users/${id}`);
     return response.data;
   } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to fetch user");
+    if (error.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check if the API is accessible from your network.');
+    } else {
+      toast.error(error.response?.data?.message || "Failed to fetch user");
+    }
     throw error;
   }
 };
@@ -52,11 +96,15 @@ export const getUserById = async (id) => {
 // Create new admin/user
 export const createUser = async (data) => {
   try {
-    const response = await axios.post(`${API_URL}/admin/org-signup`, data, getAuthHeaders());
+    const response = await axiosInstance.post(`/admin/org-signup`, data);
     toast.success("Admin created successfully");
     return response.data;
   } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to create admin");
+    if (error.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check if the API is accessible from your network.');
+    } else {
+      toast.error(error.response?.data?.message || "Failed to create admin");
+    }
     throw error;
   }
 };
@@ -64,11 +112,15 @@ export const createUser = async (data) => {
 // Update user
 export const updateUser = async (id, data) => {
   try {
-    const response = await axios.put(`${API_URL}/api/users/${id}`, data, getAuthHeaders());
+    const response = await axiosInstance.put(`/api/users/${id}`, data);
     toast.success("Admin updated successfully");
     return response.data;
   } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to update admin");
+    if (error.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check if the API is accessible from your network.');
+    } else {
+      toast.error(error.response?.data?.message || "Failed to update admin");
+    }
     throw error;
   }
 };
@@ -76,10 +128,14 @@ export const updateUser = async (id, data) => {
 // Delete user
 export const deleteUser = async (id) => {
   try {
-    await axios.delete(`${API_URL}/admin/${id}`, getAuthHeaders());
+    await axiosInstance.delete(`/admin/${id}`);
     toast.success("Admin deleted successfully");
   } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to delete admin");
+    if (error.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check if the API is accessible from your network.');
+    } else {
+      toast.error(error.response?.data?.message || "Failed to delete admin");
+    }
     throw error;
   }
 };
@@ -87,34 +143,45 @@ export const deleteUser = async (id) => {
 // Toggle user status
 export const toggleUserStatus = async (id, currentStatus) => {
   try {
-    const response = await axios.patch(
-      `${API_URL}/api/users/${id}/status`,
-      { status: !currentStatus },
-      getAuthHeaders()
+    const response = await axiosInstance.patch(
+      `/api/users/${id}/status`,
+      { status: !currentStatus }
     );
     toast.success(`Admin ${!currentStatus ? "activated" : "deactivated"} successfully`);
     return response.data;
   } catch (error) {
-    toast.error(error.response?.data?.message || "Failed to update status");
+    if (error.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check if the API is accessible from your network.');
+    } else {
+      toast.error(error.response?.data?.message || "Failed to update status");
+    }
     throw error;
   }
 };
 
 // Create role with consistent response format
-export const handleCreateRole = async (data) => {
+export const handleCreateRole = async (data, subdomain) => {
   try {
-    const res = await axios.post(`${API_URL}/roles`, data, getAuthHeaders());
+    const url = subdomain ? `/roles?subdomain=${subdomain}` : '/roles';
+    const res = await axiosInstance.post(url, data);
     return res.data;
   } catch (error) {
+    if (error.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check if the API is accessible from your network.');
+    }
     throw error;
   }
 };
 
-export const getRoles = async () => {
+export const getRoles = async (subdomain) => {
   try {
-    const res = await axios.get(`${API_URL}/roles`, getAuthHeaders());
+    const url = subdomain ? `/roles?subdomain=${subdomain}` : '/roles';
+    const res = await axiosInstance.get(url);
     return res.data;
   } catch (error) {
+    if (error.code === 'ERR_NETWORK') {
+      toast.error('Network error. Please check if the API is accessible from your network.');
+    }
     throw error;
   }
 };

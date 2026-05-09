@@ -11,7 +11,9 @@ import {
   ArrowDown,
   MoreHorizontal,
   User,
-  UserPlus
+  UserPlus,
+  TrendingUp,
+  Activity
 } from 'lucide-react';
 import { getOrganizations } from '../services/organizationApi';
 import { getUsers } from '../services/userApi';
@@ -35,7 +37,6 @@ const HomePage = () => {
     try {
       setLoading(true);
 
-      // Fetch organizations
       const orgsData = await getOrganizations();
       let organizationsArray = [];
       if (Array.isArray(orgsData)) {
@@ -48,7 +49,6 @@ const HomePage = () => {
         }
       }
 
-      // Fetch users
       const usersData = await getUsers('all');
       let usersArray = [];
       if (usersData && usersData.admins && Array.isArray(usersData.admins)) {
@@ -62,7 +62,6 @@ const HomePage = () => {
       setOrganizations(organizationsArray);
       setUsers(usersArray);
 
-      // Calculate stats
       const activeUsers = usersArray.filter(user => user.status === true || user.status === "active").length;
       const inactiveUsers = usersArray.length - activeUsers;
 
@@ -83,19 +82,20 @@ const HomePage = () => {
   const recentOrganizations = organizations.slice(0, 5);
 
   const StatCard = ({ title, value, icon: Icon, color, change, changeType }) => (
-    <div className="bg-white rounded-xl p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-gray-600 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">{value}</p>
+    <div className="bg-white rounded-2xl p-6 border border-gray-200/50 hover:shadow-xl transition-all duration-300 group cursor-pointer">
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-500 mb-2">{title}</p>
+          <p className="text-3xl font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{value}</p>
           {change && (
-            <div className={`flex items-center gap-1 mt-2 text-sm ${changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
+            <div className={`flex items-center gap-1 mt-3 text-sm font-medium ${changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
               {changeType === 'positive' ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
               <span>{change}</span>
+              <span className="text-gray-400 ml-1">vs last month</span>
             </div>
           )}
         </div>
-        <div className={`p-3 rounded-lg ${color}`}>
+        <div className={`p-4 rounded-2xl ${color} group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
           <Icon className="w-6 h-6 text-white" />
         </div>
       </div>
@@ -104,24 +104,47 @@ const HomePage = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center h-full min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading dashboard...</p>
+          <div className="relative w-16 h-16 mx-auto mb-4">
+            <div className="absolute inset-0 border-4 border-primary-200 rounded-full"></div>
+            <div className="absolute inset-0 border-4 border-primary-600 rounded-full border-t-transparent animate-spin"></div>
+          </div>
+          <p className="text-gray-600 font-medium">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
+    <div className="space-y-8">
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-primary-600 to-secondary-600 rounded-3xl p-8 text-white shadow-xl">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Welcome back, Vishal! 👋</h1>
+            <p className="text-primary-100">Here's what's happening with your LMS today.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
+              <p className="text-sm text-primary-100">Total Users</p>
+              <p className="text-2xl font-bold">{stats.totalUsers}</p>
+            </div>
+            <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
+              <p className="text-sm text-primary-100">Organizations</p>
+              <p className="text-2xl font-bold">{stats.totalOrganizations}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           title="Total Organizations"
           value={stats.totalOrganizations}
           icon={Building2}
-          color="bg-blue-500"
+          color="bg-gradient-to-br from-primary-500 to-primary-600"
           change="+12%"
           changeType="positive"
         />
@@ -129,7 +152,7 @@ const HomePage = () => {
           title="Total Users"
           value={stats.totalUsers}
           icon={Users}
-          color="bg-green-500"
+          color="bg-gradient-to-br from-green-500 to-green-600"
           change="+8%"
           changeType="positive"
         />
@@ -137,7 +160,7 @@ const HomePage = () => {
           title="Active Users"
           value={stats.activeUsers}
           icon={CheckCircle}
-          color="bg-purple-500"
+          color="bg-gradient-to-br from-secondary-500 to-secondary-600"
           change="+5%"
           changeType="positive"
         />
@@ -145,7 +168,7 @@ const HomePage = () => {
           title="Inactive Users"
           value={stats.inactiveUsers}
           icon={AlertCircle}
-          color="bg-orange-500"
+          color="bg-gradient-to-br from-orange-500 to-orange-600"
           change="-2%"
           changeType="negative"
         />
@@ -154,132 +177,175 @@ const HomePage = () => {
       {/* Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Users */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Users</h2>
-              <Link to="/admins" className="text-sm text-purple-600 hover:text-purple-700">
-                View all
-              </Link>
+        <div className="bg-white rounded-2xl border border-gray-200/50 shadow-soft overflow-hidden">
+          <div className="p-6 border-b border-gray-200/50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-secondary-100 rounded-xl flex items-center justify-center">
+                <Users className="w-5 h-5 text-secondary-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Recent Users</h2>
+                <p className="text-sm text-gray-500">Latest admin accounts</p>
+              </div>
             </div>
+            <Link to="/admins" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+              View all
+              <ArrowUp className="w-4 h-4 rotate-45" />
+            </Link>
           </div>
           <div className="p-6">
-            <div className="space-y-4">
-              {recentUsers.map((user) => (
-                <div key={user.id} className="flex items-center justify-between">
+            <div className="space-y-3">
+              {recentUsers.length > 0 ? recentUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors group">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                      <User className="w-5 h-5 text-purple-600" />
+                    <div className="w-11 h-11 bg-gradient-to-br from-secondary-100 to-secondary-200 rounded-xl flex items-center justify-center">
+                      <span className="text-secondary-600 font-semibold">{user.name?.charAt(0) || 'U'}</span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{user.name}</p>
+                      <p className="font-semibold text-gray-900">{user.name}</p>
                       <p className="text-sm text-gray-500">{user.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${user.status === true || user.status === "active" ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${user.status === true || user.status === "active" ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                       {user.status === true || user.status === "active" ? 'Active' : 'Inactive'}
                     </span>
-                    <button className="p-1 hover:bg-gray-100 rounded">
-                      <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                    <button className="p-2 hover:bg-gray-200 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MoreHorizontal className="w-4 h-4 text-gray-500" />
                     </button>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Users className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No users found</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
         {/* Recent Organizations */}
-        <div className="bg-white rounded-xl border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Recent Organizations</h2>
-              <Link to="/organizations" className="text-sm text-purple-600 hover:text-purple-700">
-                View all
-              </Link>
+        <div className="bg-white rounded-2xl border border-gray-200/50 shadow-soft overflow-hidden">
+          <div className="p-6 border-b border-gray-200/50 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+                <Building2 className="w-5 h-5 text-primary-600" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">Recent Organizations</h2>
+                <p className="text-sm text-gray-500">Latest registered orgs</p>
+              </div>
             </div>
+            <Link to="/organizations" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
+              View all
+              <ArrowUp className="w-4 h-4 rotate-45" />
+            </Link>
           </div>
           <div className="p-6">
-            <div className="space-y-4">
-              {recentOrganizations.map((org) => (
-                <div key={org.id} className="flex items-center justify-between">
+            <div className="space-y-3">
+              {recentOrganizations.length > 0 ? recentOrganizations.map((org) => (
+                <div key={org.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-gray-50 transition-colors group">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Building2 className="w-5 h-5 text-blue-600" />
+                    <div className="w-11 h-11 bg-gradient-to-br from-primary-100 to-primary-200 rounded-xl flex items-center justify-center">
+                      <Building2 className="w-5 h-5 text-primary-600" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{org.name}</p>
+                      <p className="font-semibold text-gray-900">{org.name}</p>
                       <p className="text-sm text-gray-500">{org.code}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`px-2 py-1 text-xs rounded-full ${org.status === true || org.status === "active" ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <div className="flex items-center gap-3">
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${org.status === true || org.status === "active" ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                       {org.status === true || org.status === "active" ? 'Active' : 'Inactive'}
                     </span>
-                    <button className="p-1 hover:bg-gray-100 rounded">
-                      <MoreHorizontal className="w-4 h-4 text-gray-400" />
+                    <button className="p-2 hover:bg-gray-200 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MoreHorizontal className="w-4 h-4 text-gray-500" />
                     </button>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Building2 className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+                  <p>No organizations found</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
+      <div className="bg-white rounded-2xl border border-gray-200/50 shadow-soft p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-accent-100 rounded-xl flex items-center justify-center">
+            <Activity className="w-5 h-5 text-accent-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Quick Actions</h2>
+            <p className="text-sm text-gray-500">Perform common tasks quickly</p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link
             to="/create-org"
-            className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="group flex items-center gap-4 p-5 border-2 border-gray-200 rounded-2xl hover:border-primary-500 hover:bg-primary-50 transition-all duration-300"
           >
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Building2 className="w-5 h-5 text-blue-600" />
+            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <Building2 className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">Create Organization</p>
+              <p className="font-semibold text-gray-900 group-hover:text-primary-700 transition-colors">Create Organization</p>
               <p className="text-sm text-gray-500">Add a new organization</p>
             </div>
           </Link>
 
           <Link
             to="/create-admin"
-            className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="group flex items-center gap-4 p-5 border-2 border-gray-200 rounded-2xl hover:border-green-500 hover:bg-green-50 transition-all duration-300"
           >
-            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-              <UserPlus className="w-5 h-5 text-green-600" />
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <UserPlus className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">Create Admin</p>
+              <p className="font-semibold text-gray-900 group-hover:text-green-700 transition-colors">Create Admin</p>
               <p className="text-sm text-gray-500">Add a new admin user</p>
             </div>
           </Link>
 
           <Link
             to="/create-role"
-            className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            className="group flex items-center gap-4 p-5 border-2 border-gray-200 rounded-2xl hover:border-secondary-500 hover:bg-secondary-50 transition-all duration-300"
           >
-            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Shield className="w-5 h-5 text-purple-600" />
+            <div className="w-12 h-12 bg-gradient-to-br from-secondary-500 to-secondary-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <Shield className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="font-medium text-gray-900">Create Role</p>
+              <p className="font-semibold text-gray-900 group-hover:text-secondary-700 transition-colors">Create Role</p>
               <p className="text-sm text-gray-500">Define user permissions</p>
             </div>
           </Link>
         </div>
       </div>
 
-      {/* Activity Chart Placeholder */}
-      <div className="mt-8 bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Activity Overview</h2>
-        <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+      {/* Activity Overview */}
+      <div className="bg-white rounded-2xl border border-gray-200/50 shadow-soft p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+            <TrendingUp className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Activity Overview</h2>
+            <p className="text-sm text-gray-500">Track your system activity</p>
+          </div>
+        </div>
+        <div className="h-80 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border-2 border-dashed border-gray-200">
           <div className="text-center">
-            <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-            <p className="text-gray-500">Activity charts coming soon</p>
+            <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-soft mx-auto mb-4">
+              <BarChart3 className="w-10 h-10 text-gray-400" />
+            </div>
+            <p className="text-gray-600 font-medium mb-2">Activity Charts Coming Soon</p>
+            <p className="text-sm text-gray-500">We're working on bringing you detailed analytics</p>
           </div>
         </div>
       </div>

@@ -130,9 +130,11 @@ const ViewAdmins = () => {
       }));
 
       // Filter only admin roles (excluding superadmin if needed)
-      let adminUsers = mappedAdmins.filter((u) =>
-        ["admin", "superadmin", "manager", "tenant_admin"].includes(u.role?.toLowerCase())
-      );
+      // Normalize role names to handle variations like "super admin" vs "superadmin"
+      let adminUsers = mappedAdmins.filter((u) => {
+        const normalizedRole = u.role?.toLowerCase().replace(/\s+/g, '');
+        return ["admin", "superadmin", "manager", "tenant_admin"].includes(normalizedRole);
+      });
 
       // Filter by selected organization if not "all"
       if (selectedOrganization !== "all") {
@@ -604,8 +606,8 @@ const ViewAdmins = () => {
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${admin.status === true
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
                             }`}
                         >
                           {admin.status === true ? (
@@ -640,8 +642,8 @@ const ViewAdmins = () => {
                             onClick={() => handleStatusToggle(admin)}
                             disabled={actionLoading === `status-${admin.id}`}
                             className={`p-2 rounded-lg transition-colors ${admin.status === true
-                                ? "bg-green-100 text-green-600 hover:bg-green-200"
-                                : "bg-red-100 text-red-600 hover:bg-red-200"
+                              ? "bg-green-100 text-green-600 hover:bg-green-200"
+                              : "bg-red-100 text-red-600 hover:bg-red-200"
                               } disabled:opacity-50`}
                             title={admin.status === true ? "Deactivate" : "Activate"}
                           >
